@@ -1,0 +1,64 @@
+version: 1
+updates:
+  # Update .NET dependencies
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "nuget"
+      - "automated"
+    reviewers:
+      - "RadwanAyoub"
+    assignees:
+      - "RadwanAyoub"
+    commit-message:
+      prefix: "nuget"
+      prefix-development: "nuget-dev"
+      include: "scope"
+
+  # Update npm dependencies (for React frontend)
+  - package-ecosystem: "npm"
+    directory: "/src/frontend"  # Adjust path when you create React app
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "npm"
+      - "automated"
+    reviewers:
+      - "RadwanAyoub"
+    assignees:
+      - "RadwanAyoub"
+    versioning-strategy: "auto"
+    commit-message:
+      prefix: "npm"
+      prefix-development: "npm-dev"
+      include: "scope"
+
+  # Update GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "github-actions"
+      - "automated"
+    reviewers:
+      - "RadwanAyoub"
+    assignees:
+      - "RadwanAyoub"

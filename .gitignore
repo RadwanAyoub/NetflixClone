@@ -527,3 +527,16 @@ docker-compose.override.yml
 ## Azure ##
 # Azure
 *.azure
+
+# GitHub Actions
+!.github/workflows/
+.github/workflows/*.tmp
+
+# Test results
+*.trx
+*.html
+.coverage
+coverage.xml
+
+# SonarQube
+.sonarqube/
