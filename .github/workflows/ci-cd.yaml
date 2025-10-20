@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ master, feature ]
+    branches: [ master ]
   pull_request:
-    branches: [ master, feature ]
+    branches: [ master ]
 
 env:
   DOTNET_VERSION: '9.0.x'
@@ -23,13 +23,6 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: '**/package-lock.json'
 
     - name: Restore .NET dependencies
       run: dotnet restore
