@@ -60,6 +60,9 @@ jobs:
           curl -L -o dependency-check.zip https://github.com/jeremylong/DependencyCheck/releases/download/v9.0.9/dependency-check-9.0.9-release.zip
           unzip dependency-check.zip
           chmod +x dependency-check/bin/dependency-check.sh
+      
+      - name: Create reports directory
+        run: mkdir -p reports
 
       - name: Run OWASP Dependency Check
         run: |
@@ -104,21 +107,30 @@ jobs:
           head: ${{ github.event.pull_request.head.sha || github.sha }}
           extra_args: --only-verified
 
-# Optional: Snyk scan (requires paid token)
-  snyk-security:
-    name: Snyk Security Scan
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '9.0.x'
-      - name: Run Snyk for .NET
-        uses: snyk/actions/dotnet@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high
+snyk-security:
+  name: Snyk Security Scan
+  runs-on: ubuntu-latest
+  continue-on-error: true
+
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Setup Snyk CLI
+      uses: snyk/actions/setup@v2
+      with:
+        version: latest
+
+    - name: Run Snyk test
+      run: snyk test --severity-threshold=high
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
