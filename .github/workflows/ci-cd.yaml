@@ -10,6 +10,10 @@ env:
   DOTNET_VERSION: '9.0.x'
   NODE_VERSION: '20.x'
 
+permissions:
+  checks: write
+  contents: read
+
 jobs:
   build-and-test:
     name: Build and Test

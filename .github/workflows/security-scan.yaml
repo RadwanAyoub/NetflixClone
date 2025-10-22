@@ -8,7 +8,6 @@ on:
   schedule:
     - cron: '0 2 * * 1'  # Weekly on Monday at 2 AM
 
-# Add permissions at the workflow level
 permissions:
   contents: read
   security-events: write
@@ -19,119 +18,107 @@ jobs:
   codeql:
     name: CodeQL Analysis
     runs-on: ubuntu-latest
-    
-    permissions:
-      contents: read
-      security-events: write
-      actions: read
-    
+
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'csharp', 'javascript' ]
-    
+        language: [ 'csharp' ]
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
-      with:
-        languages: ${{ matrix.language }}
-        queries: security-and-quality
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-and-quality
 
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v3
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
 
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
-      with:
-        category: "/language:${{ matrix.language }}"
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
 
   dependency-check:
-    name: Dependency Vulnerability Scan
+    name: OWASP Dependency Check
     runs-on: ubuntu-latest
-    
-    permissions:
-      contents: read
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '9.0.x'
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
 
-    - name: Download OWASP Dependency Check
-      run: |
-        curl -L -o dependency-check.zip https://github.com/jeremylong/DependencyCheck/releases/download/v9.0.9/dependency-check-9.0.9-release.zip
-        unzip dependency-check.zip
-        chmod +x dependency-check/bin/dependency-check.sh
+      - name: Download OWASP Dependency Check
+        run: |
+          curl -L -o dependency-check.zip https://github.com/jeremylong/DependencyCheck/releases/download/v9.0.9/dependency-check-9.0.9-release.zip
+          unzip dependency-check.zip
+          chmod +x dependency-check/bin/dependency-check.sh
 
-    - name: Run OWASP Dependency Check
-      run: |
-        ./dependency-check/bin/dependency-check.sh \
-          --project "NetflixClone" \
-          --scan "." \
-          --format "HTML" \
-          --format "SARIF" \
-          --out "reports" \
-          --enableRetired \
-          --failOnCVSS 8 \
-          --scan "**/*.csproj" \
-          --scan "**/package.json"
+      - name: Run OWASP Dependency Check
+        run: |
+          ./dependency-check/bin/dependency-check.sh \
+            --project "NetflixClone" \
+            --scan "." \
+            --format "HTML" \
+            --format "SARIF" \
+            --out "reports" \
+            --enableRetired \
+            --failOnCVSS 8 \
+            --scan "**/*.csproj" \
+            --scan "**/package.json"
 
-    - name: Upload Dependency Check Report
-      uses: actions/upload-artifact@v4
-      with:
-        name: dependency-check-report
-        path: reports/
-        retention-days: 30
+      - name: Upload Dependency Check Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-report
+          path: reports/
+          retention-days: 30
 
-  snyk-security:
-    name: Snyk Security Scan
-    runs-on: ubuntu-latest
-    continue-on-error: true  # Don't fail the entire workflow if Snyk finds issues
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '9.0.x'
-
-    - name: Run Snyk for .NET
-      uses: snyk/actions/dotnet@master
-      env:
-        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      with:
-        args: --severity-threshold=high
-
-    #- name: Monitor project with Snyk
-    #  uses: snyk/actions/node@master
-    #  env:
-    #    SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-    #  with:
-    #    args: --severity-threshold=high --project-name=NetflixClone-Frontend
+      - name: Upload SARIF to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: reports/dependency-check-report.sarif
 
   trufflehog:
     name: Secrets Scan
     runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0  # Important for scanning full git history
 
-    - name: Scan for secrets with TruffleHog
-      uses: trufflesecurity/trufflehog@main
-      with:
-        path: ./
-        base: ${{ github.base_ref }}
-        head: ${{ github.head_ref }}
-        extra_args: --only-verified
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Required for full history scan
+
+      - name: Scan for secrets with TruffleHog
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.pull_request.base.sha || github.sha }}
+          head: ${{ github.event.pull_request.head.sha || github.sha }}
+          extra_args: --only-verified
+
+# Optional: Snyk scan (requires paid token)
+  snyk-security:
+    name: Snyk Security Scan
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      - name: Run Snyk for .NET
+        uses: snyk/actions/dotnet@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
