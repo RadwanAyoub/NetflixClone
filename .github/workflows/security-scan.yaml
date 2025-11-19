@@ -125,7 +125,7 @@ snyk-security:
       run: dotnet restore
 
     - name: Setup Snyk CLI
-      uses: snyk/actions/setup@v2
+      uses: snyk/actions/setup@master
       with:
         version: latest
 

@@ -75,7 +75,7 @@ jobs:
         dotnet list package --vulnerable --include-transitive
     
     - name: Setup Snyk CLI
-      uses: snyk/actions/setup@v2
+      uses: snyk/actions/setup@master
       with:
         version: latest
 
