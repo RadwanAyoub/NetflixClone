@@ -130,7 +130,6 @@ snyk-security:
         version: latest
 
     - name: Run Snyk test
-      run: snyk test --severity-threshold=high
+      run: snyk test --severity-threshold=high --all-projects -d
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
