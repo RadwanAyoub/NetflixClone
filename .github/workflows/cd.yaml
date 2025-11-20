@@ -60,7 +60,7 @@ on:
 jobs:
   ci-validation:
     name: CI Validation
-    uses: ./.github/workflows/ci.yaml
+    uses: ./github/workflows/ci.yaml
     if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.skip-tests == 'true') }}
 
   deploy-staging:
