@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [ master ]
   schedule:
-    - cron: '0 2 * * 1'  # Weekly on Monday at 2 AM
+    - cron: '0 0 * * 1-4' # Weekly on Monday to Thursday at midnight
 
 permissions:
   contents: read
@@ -127,7 +127,7 @@ snyk-security:
     - name: Setup Snyk CLI
       uses: snyk/actions/setup@master
       with:
-        version: latest
+        snyk-version: latest
 
     - name: Run Snyk test
       run: snyk test --severity-threshold=high --all-projects -d
