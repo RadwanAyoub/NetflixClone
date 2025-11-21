@@ -10,9 +10,9 @@ on:
         default: 'REV'
         type: choice
         options:
-        - DEV (Development)
-        - REV (Review, UAT, QA)
-        - PROD (Production)
+        - DEV
+        - REV
+        - PROD
       
       # Deployment strategy (only for manual trigger)
       deploy-strategy:
