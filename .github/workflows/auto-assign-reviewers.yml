@@ -1,4 +1,4 @@
-name: Auto Assign Reviewers
+name: Auto-Assign-Reviewers
 
 on:
   pull_request:
