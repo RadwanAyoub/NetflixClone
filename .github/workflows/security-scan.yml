@@ -107,29 +107,29 @@ jobs:
           head: ${{ github.event.pull_request.head.sha || github.sha }}
           extra_args: --only-verified
 
-snyk-security:
-  name: Snyk Security Scan
-  runs-on: ubuntu-latest
-  continue-on-error: true
+  snyk-security:
+    name: Snyk Security Scan
+    runs-on: ubuntu-latest
+    continue-on-error: true
 
-  steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '9.0.x'
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
 
-    - name: Restore dependencies
-      run: dotnet restore
+      - name: Restore dependencies
+        run: dotnet restore
 
-    - name: Setup Snyk CLI
-      uses: snyk/actions/setup@master
-      with:
-        snyk-version: latest
+      - name: Setup Snyk CLI
+        uses: snyk/actions/setup@master
+        with:
+          snyk-version: latest
 
-    - name: Run Snyk test
-      run: snyk test --severity-threshold=high --all-projects -d
-      env:
-        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      - name: Run Snyk test
+        run: snyk test --severity-threshold=high --all-projects -d
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
