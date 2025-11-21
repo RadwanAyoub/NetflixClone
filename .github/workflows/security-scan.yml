@@ -1,0 +1,135 @@
+name: Security Scan - Synk
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  schedule:
+    - cron: '0 0 * * 1-4' # Weekly on Monday to Thursday at midnight
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+  checks: write
+
+jobs:
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'csharp' ]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-and-quality
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
+
+  dependency-check:
+    name: OWASP Dependency Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Download OWASP Dependency Check
+        run: |
+          curl -L -o dependency-check.zip https://github.com/jeremylong/DependencyCheck/releases/download/v9.0.9/dependency-check-9.0.9-release.zip
+          unzip dependency-check.zip
+          chmod +x dependency-check/bin/dependency-check.sh
+      
+      - name: Create reports directory
+        run: mkdir -p reports
+
+      - name: Run OWASP Dependency Check
+        run: |
+          ./dependency-check/bin/dependency-check.sh \
+            --project "NetflixClone" \
+            --scan "." \
+            --format "HTML" \
+            --format "SARIF" \
+            --out "reports" \
+            --enableRetired \
+            --failOnCVSS 8 \
+            --scan "**/*.csproj" \
+            --scan "**/package.json"
+
+      - name: Upload Dependency Check Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-report
+          path: reports/
+          retention-days: 30
+
+      - name: Upload SARIF to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: reports/dependency-check-report.sarif
+
+  trufflehog:
+    name: Secrets Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Required for full history scan
+
+      - name: Scan for secrets with TruffleHog
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.pull_request.base.sha || github.sha }}
+          head: ${{ github.event.pull_request.head.sha || github.sha }}
+          extra_args: --only-verified
+
+snyk-security:
+  name: Snyk Security Scan
+  runs-on: ubuntu-latest
+  continue-on-error: true
+
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Setup Snyk CLI
+      uses: snyk/actions/setup@master
+      with:
+        snyk-version: latest
+
+    - name: Run Snyk test
+      run: snyk test --severity-threshold=high --all-projects -d
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}

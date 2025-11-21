@@ -1,0 +1,96 @@
+name: CI Pipeline - Build & Test
+
+on:
+  # This workflow can be triggered in two ways:
+  # 1. Directly on PR events
+  # 2. Called by other workflows (reusable)
+  pull_request:
+    branches: [ master ]
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_call:  # This makes it reusable
+    outputs:
+      build-success:
+        description: "Build and test completed successfully"
+        value: ${{ jobs.build-and-test.result == 'success' }}
+      security-success:
+        description: "Security scan completed"
+        value: ${{ jobs.security-scan.result == 'success' }}
+
+env:
+  DOTNET_VERSION: '9.0.x'
+  NODE_VERSION: '20.x'
+
+permissions:
+  checks: write
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Restore .NET dependencies
+      run: dotnet restore
+
+    - name: Build .NET solution
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Run .NET unit tests
+      run: dotnet test --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: dotnet-test-results
+        path: "**/TestResults/*.trx"
+        retention-days: 30
+
+    - name: Test Report
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: .NET Tests
+        path: "**/TestResults/*.trx"
+        reporter: dotnet-trx
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Restore .NET dependencies
+      run: dotnet restore
+      
+    - name: Run security scan
+      run: |
+        dotnet list package --vulnerable --include-transitive
+    
+    - name: Setup Snyk CLI
+      uses: snyk/actions/setup@master
+      with:
+        snyk-version: latest
+
+    - name: Run Snyk security scan
+      run: snyk test --severity-threshold=high --all-projects -d
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      continue-on-error: true

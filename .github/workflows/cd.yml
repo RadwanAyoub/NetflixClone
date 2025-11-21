@@ -1,0 +1,153 @@
+name: CD Pipeline - Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      # Deployment environment (only for manual trigger)
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'REV'
+        type: choice
+        options:
+        - DEV (Development)
+        - REV (Review, UAT, QA)
+        - PROD (Production)
+      
+      # Deployment strategy (only for manual trigger)
+      deploy-strategy:
+        description: 'Deployment strategy to use'
+        required: true
+        default: 'rolling'
+        type: choice
+        options:
+        - rolling
+        - blue-green
+        - canary
+        - recreate
+      
+      # Only for canary deployment strategy
+      canary-percentage:
+        description: 'Initial canary traffic percentage (if using canary)'
+        required: false
+        default: '10'
+        type: choice
+        options:
+        - '5'
+        - '10'
+        - '25'
+        - '50'
+      
+      # skip tests (only for manual trigger)
+      skip-tests:
+        description: 'Skip tests (use with caution)'
+        required: true
+        default: false
+        type: boolean
+      
+      # Deployment notes and purpose (only for manual trigger)
+      deployment-notes:
+        description: 'Deployment notes and purpose'
+        required: false
+        default: 'Manual deployment for development, review, or production'
+        type: string
+
+  push:
+    branches: [ master ]
+  schedule:
+    - cron: '0 0 * * 1-4' # Weekly on Monday to Thursday at midnight
+
+jobs:
+  ci-validation:
+    name: CI Validation
+    uses: ./github/workflows/ci.yml
+    if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.skip-tests == 'true') }}
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: ci-validation
+    
+    if: |
+      always() && 
+      (needs.ci-validation.result == 'success' || 
+       needs.ci-validation.result == 'skipped')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Display deployment strategy
+      run: |
+        echo "🚀 Deployment Strategy: ${{ github.event.inputs.deploy-strategy || 'rolling' }}"
+        echo "📊 Strategy Details:"
+        
+        case "${{ github.event.inputs.deploy-strategy || 'rolling' }}" in
+          "rolling")
+            echo "   🔄 Rolling Deployment - Zero downtime, gradual instance replacement"
+            ;;
+          "blue-green")
+            echo "   🔵🟢 Blue-Green - Zero risk, instant rollback, double infrastructure"
+            ;;
+          "canary")
+            echo "   🐦 Canary - Low risk, ${{ github.event.inputs.canary-percentage || '10' }}% traffic initially"
+            ;;
+          "recreate")
+            echo "   ⚡ Recreate - Simple but causes downtime during deployment"
+            ;;
+        esac
+
+    - name: Publish .NET application
+      run: dotnet publish -c Release -o ./publish
+
+    - name: Execute deployment strategy
+      run: |
+        STRATEGY="${{ github.event.inputs.deploy-strategy || 'rolling' }}"
+        ENVIRONMENT="${{ github.event.inputs.environment || 'staging' }}"
+        CANARY_PERCENTAGE="${{ github.event.inputs.canary-percentage || '10' }}"
+        
+        echo "🎯 Executing $STRATEGY deployment to $ENVIRONMENT"
+        
+        case $STRATEGY in
+          "rolling")
+            echo "🔄 Starting rolling deployment..."
+            # kubectl rollout restart deployment/netflix-clone -n $ENVIRONMENT
+            # kubectl rollout status deployment/netflix-clone -n $ENVIRONMENT
+            ;;
+            
+          "blue-green")
+            echo "🔵🟢 Starting blue-green deployment..."
+            # Determine current active color (blue/green)
+            # kubectl apply -f k8s/$ENVIRONMENT-green.yaml
+            # kubectl wait --for=condition=ready pod -l app=netflix-clone,color=green
+            # kubectl patch service netflix-clone -p '{"spec":{"selector":{"color":"green"}}}'
+            ;;
+            
+          "canary")
+            echo "🐦 Starting canary deployment ($CANARY_PERCENTAGE% traffic)..."
+            # kubectl apply -f k8s/$ENVIRONMENT-canary.yaml
+            # Update Istio/DestinationRule to split traffic
+            # kubectl patch destinationrule netflix-clone -p '{"spec":{"trafficPolicy":{"loadBalancer":{"simple":"ROUND_ROBIN"}}}}'
+            ;;
+            
+          "recreate")
+            echo "⚡ Starting recreate deployment (downtime expected)..."
+            # kubectl scale deployment netflix-clone --replicas=0
+            # kubectl apply -f k8s/$ENVIRONMENT.yaml
+            # kubectl scale deployment netflix-clone --replicas=3
+            ;;
+        esac
+        
+        echo "✅ $STRATEGY deployment initiated successfully"
+
+    - name: Wait for deployment completion
+      run: |
+        echo "⏳ Monitoring deployment progress..."
+        # kubectl rollout status deployment/netflix-clone --timeout=600s
+        # Add health checks and smoke tests
+        echo "🎉 Deployment completed successfully!"

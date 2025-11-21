@@ -1,0 +1,54 @@
+name: Auto Assign Reviewers - PRs
+
+on:
+  pull_request:
+    types: [ready_for_review, opened, reopened, synchronize]
+    branches: [ master ]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  assign-reviewers:
+    name: Assign Reviewers
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Assign Reviewers
+      uses: actions/github-script@v7
+      with:
+        script: |
+          try {
+            console.log("🚀 Starting auto-reviewer assignment...");
+
+            // Define your list of potential reviewers
+            const REVIEWERS = ["RadwanAyoub"];
+
+            // Get the PR author's username
+            const prAuthor = context.payload.pull_request.user.login;
+            console.log("📝 PR Author:", prAuthor);
+
+            // Filter out the author from the reviewers list
+            const filteredReviewers = REVIEWERS.filter(
+              (reviewer) => reviewer !== prAuthor
+            );
+            console.log("👥 Reviewers after filtering out author:", filteredReviewers);
+
+            // Only proceed if there are reviewers to assign
+            if (filteredReviewers.length > 0) {
+            await github.rest.pulls.requestReviewers({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+              reviewers: filteredReviewers,
+            });
+            console.log("✅ Successfully assigned reviewers!");
+            } 
+            else {
+              console.log("ℹ️ No reviewers to assign after filtering out the PR author.");
+            }
+          } 
+          catch (error) {
+            console.log("❌ Error assigning reviewers:", error.message);
+          }
+    
