@@ -14,37 +14,41 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Assign Fixed Reviewers
+    - name: Assign Reviewers
       uses: actions/github-script@v7
       with:
         script: |
-          console.log('🚀 Starting auto-reviewer assignment...');
-          
-          // Replace these with actual GitHub usernames
-          const REVIEWERS = [
-            'RadwanAyoub',  // Replace with your username
-            // 'another-teammate',  // Add more teammates as needed
-          ];
-          
-          const TEAM_REVIEWERS = [
-            // 'your-team-slug',  // Add team slugs if you have teams
-          ];
-          
-          console.log('👥 Assigning reviewers:', REVIEWERS);
-          console.log('🏢 Assigning team reviewers:', TEAM_REVIEWERS);
-          
           try {
+            console.log("🚀 Starting auto-reviewer assignment...");
+
+            // Define your list of potential reviewers
+            const REVIEWERS = ["RadwanAyoub"];
+
+            // Get the PR author's username
+            const prAuthor = context.payload.pull_request.user.login;
+            console.log("📝 PR Author:", prAuthor);
+
+            // Filter out the author from the reviewers list
+            const filteredReviewers = REVIEWERS.filter(
+              (reviewer) => reviewer !== prAuthor
+            );
+            console.log("👥 Reviewers after filtering out author:", filteredReviewers);
+
+            // Only proceed if there are reviewers to assign
+            if (filteredReviewers.length > 0) {
             await github.rest.pulls.requestReviewers({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: context.payload.pull_request.number,
-              reviewers: REVIEWERS,
-              team_reviewers: TEAM_REVIEWERS,
+              reviewers: filteredReviewers,
             });
-            
-            console.log('✅ Successfully assigned reviewers!');
-            
-          } catch (error) {
-            console.log('❌ Error assigning reviewers:', error.message);
-            console.log('💡 Make sure the usernames are correct and have access to the repo');
+            console.log("✅ Successfully assigned reviewers!");
+            } 
+            else {
+              console.log("ℹ️ No reviewers to assign after filtering out the PR author.");
+            }
+          } 
+          catch (error) {
+            console.log("❌ Error assigning reviewers:", error.message);
           }
+    
