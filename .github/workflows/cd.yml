@@ -61,6 +61,8 @@ jobs:
   ci-validation:
     name: CI Validation
     uses: ./.github/workflows/ci.yml
+    permissions:
+      checks: write
     if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.skip-tests == 'true') }}
 
   deploy-staging:
