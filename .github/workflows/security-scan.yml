@@ -1,8 +1,6 @@
-name: Security Scan - Synk
+name: Security Scan - Synk & OWASP
 
 on:
-  push:
-    branches: [ master ]
   pull_request:
     branches: [ master ]
   schedule:
