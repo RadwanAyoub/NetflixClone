@@ -67,6 +67,13 @@ jobs:
       - name: Create reports directory
         run: mkdir -p reports
         
+      - name: Debug NVD API key
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+        run: |
+            echo "✔ NVD_API_KEY is set"
+            echo "API key length: ${#NVD_API_KEY}"
+
       - name: Run OWASP Dependency Check
         env:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
@@ -80,7 +87,7 @@ jobs:
             --failOnCVSS 8 \
             --enableRetired \
             --nvdApiKey "$NVD_API_KEY" \
-            --nvdApiDelay 6000
+            --nvdApiDelay 9000
 
       - name: Upload HTML Report
         uses: actions/upload-artifact@v4
