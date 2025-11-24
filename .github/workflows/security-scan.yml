@@ -40,71 +40,71 @@ jobs:
   #       with:
   #         category: "/language:${{ matrix.language }}"
 
-  dependency-check:
-    name: OWASP Dependency Check
-    runs-on: ubuntu-latest
-    #needs: codeql   # OPTIONAL – can run in parallel
+  # dependency-check:
+  #   name: OWASP Dependency Check
+  #   runs-on: ubuntu-latest
+  #   #needs: codeql   # OPTIONAL – can run in parallel
 
-    steps:
-      - uses: actions/checkout@v4
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '9.0.x'
+  #     - uses: actions/setup-dotnet@v4
+  #       with:
+  #         dotnet-version: '9.0.x'
 
-      - name: Cache OWASP DB (SPEED BOOST 🚀)
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2/repository/org/owasp/dependency-check-data
-          key: ${{ runner.os }}-dependency-check-db
+  #     - name: Cache OWASP DB (SPEED BOOST 🚀)
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: ~/.m2/repository/org/owasp/dependency-check-data
+  #         key: ${{ runner.os }}-dependency-check-db
 
-      - name: Download OWASP Dependency Check
-        run: |
-          curl -L -o dependency-check.zip https://github.com/jeremylong/DependencyCheck/releases/download/v9.0.9/dependency-check-9.0.9-release.zip
-          unzip dependency-check.zip
-          chmod +x dependency-check/bin/dependency-check.sh
+  #     - name: Download OWASP Dependency Check
+  #       run: |
+  #         curl -L -o dependency-check.zip https://github.com/jeremylong/DependencyCheck/releases/download/v9.0.9/dependency-check-9.0.9-release.zip
+  #         unzip dependency-check.zip
+  #         chmod +x dependency-check/bin/dependency-check.sh
 
-      - name: Create reports directory
-        run: mkdir -p reports
+  #     - name: Create reports directory
+  #       run: mkdir -p reports
         
-      - name: Debug NVD API key
-        env:
-          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
-        run: |
-            echo "✔ NVD_API_KEY is set"
-            echo "API key length: ${#NVD_API_KEY}"
+  #     - name: Debug NVD API key
+  #       env:
+  #         NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+  #       run: |
+  #           echo "✔ NVD_API_KEY is set"
+  #           echo "API key length: ${#NVD_API_KEY}"
 
-      - name: Run OWASP Dependency Check
-        env:
-          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
-        run: |
-          ./dependency-check/bin/dependency-check.sh \
-            --project "NetflixClone" \
-            --scan "**/*.csproj" \
-            --format "HTML" \
-            --format "SARIF" \
-            --out "reports" \
-            --failOnCVSS 8 \
-            --enableRetired \
-            --nvdApiKey "$NVD_API_KEY" \
-            --nvdApiDelay 15000
+  #     - name: Run OWASP Dependency Check
+  #       env:
+  #         NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+  #       run: |
+  #         ./dependency-check/bin/dependency-check.sh \
+  #           --project "NetflixClone" \
+  #           --scan "**/*.csproj" \
+  #           --format "HTML" \
+  #           --format "SARIF" \
+  #           --out "reports" \
+  #           --failOnCVSS 8 \
+  #           --enableRetired \
+  #           --nvdApiKey "$NVD_API_KEY" \
+  #           --nvdApiDelay 15000
 
-      - name: Upload HTML Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: dependency-check-report
-          path: reports/*.html
-          retention-days: 30
+  #     - name: Upload HTML Report
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: dependency-check-report
+  #         path: reports/*.html
+  #         retention-days: 30
 
-      - name: Upload SARIF to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: reports/*.sarif
+  #     - name: Upload SARIF to GitHub Code Scanning
+  #       uses: github/codeql-action/upload-sarif@v3
+  #       with:
+  #         sarif_file: reports/*.sarif
 
   snyk-security:
     name: Snyk Security Scan
     runs-on: ubuntu-latest
-    needs: dependency-check
+    # needs: dependency-check
     continue-on-error: true
 
     steps:
