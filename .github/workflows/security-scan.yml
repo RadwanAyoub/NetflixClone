@@ -66,8 +66,10 @@ jobs:
 
       - name: Create reports directory
         run: mkdir -p reports
-
+        
       - name: Run OWASP Dependency Check
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
         run: |
           ./dependency-check/bin/dependency-check.sh \
             --project "NetflixClone" \
@@ -77,9 +79,9 @@ jobs:
             --out "reports" \
             --failOnCVSS 8 \
             --enableRetired \
-            --nvdApiKey "${{ secrets.NVD_API_KEY }}"
-        env:
-          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}   # must be created in GitHub Secrets
+            --nvdApiKey "$NVD_API_KEY" \
+            --nvdApiDelay 2000 \
+            --cveValidForHours 24
 
       - name: Upload HTML Report
         uses: actions/upload-artifact@v4
@@ -111,7 +113,7 @@ jobs:
       - name: Setup Snyk CLI
         uses: snyk/actions/setup@master
         with:
-          snyk-version: latest   # 🚀 ONLY this is valid
+          snyk-version: latest
 
       - name: Run Snyk
         run: snyk test --severity-threshold=high --all-projects
