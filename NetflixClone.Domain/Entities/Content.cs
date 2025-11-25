@@ -3,7 +3,7 @@ using NetflixClone.Domain.Enums;
 
 namespace NetflixClone.Domain.Entities
 {
-    public class Content : EntityBase
+    public abstract class Content : EntityBase
     {
         public string Title { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
