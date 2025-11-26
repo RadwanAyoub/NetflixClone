@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using NetflixClone.Domain.Common;
 using NetflixClone.Domain.Entities;
-using NetflixClone.Infrastructure.Data.Configurations;
 using System.Reflection;
 
 namespace NetflixClone.Infrastructure.Data

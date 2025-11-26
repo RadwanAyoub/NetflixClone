@@ -1,9 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Configuration.Json;
-using System;
-using System.IO;
 
 namespace NetflixClone.Infrastructure.Data
 {
@@ -26,7 +23,7 @@ namespace NetflixClone.Infrastructure.Data
             if (string.IsNullOrEmpty(connectionString))
             {
                 // Fallback connection string for design-time operations
-                connectionString = "Server=(localdb)\\mssqllocaldb;Database=NetflixCloneDb;Trusted_Connection=true;MultipleActiveResultSets=true";
+                connectionString = "Server=localhost;Database=NetflixCloneDb;Trusted_Connection=True;TrustServerCertificate=True;";
             }
 
             optionsBuilder.UseSqlServer(connectionString, options =>
