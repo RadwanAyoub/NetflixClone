@@ -51,8 +51,7 @@ namespace NetflixClone.Infrastructure.Configurations
                 .HasMaxLength(20);
 
             builder.Property(c => c.MaxQuality)
-                .HasConversion<string>()
-                .HasMaxLength(20);
+                .HasConversion<int>();
 
             // Indexes
             builder.HasIndex(c => c.ContentType);

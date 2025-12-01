@@ -16,7 +16,7 @@ namespace NetflixClone.WebApi
                 await context.Database.MigrateAsync();
                 
                 // Optional: Seed initial data
-                await SeedDataAsync(context);
+                //await SeedDataAsync(context);
             }
             catch (Exception ex)
             {
