@@ -13,6 +13,9 @@ builder.Services.AddApplication();
 // Add Infrastructure Layer
 builder.Services.AddInfrastructure(builder.Configuration);
 
+// Add webAPI Layer
+builder.Services.AddWebAPI();
+
 // Add Swagger/OpenAPI
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -24,7 +27,7 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-    
+
     // Apply migrations automatically in development
     await app.ApplyMigrationsAsync();
 }
